@@ -14,10 +14,23 @@ Next.js + Supabaseで構築し、Vercelにデプロイする。
 
 ## ディレクトリ構成
  src/
- └── app/               # ページとレイアウト
-        ├──page.tsx     # トップページ
-        ├──layout.tsx   # 共通レイアウト
-        └──globals.css  # グローバルスタイル
+ ├── app/                            # ページとレイアウト
+ │      ├──page.tsx                  # トップページ
+ │      ├──layout.tsx                # 共通レイアウト
+ │      └──globals.css               # グローバルスタイル
+ ├── lib/
+ │      ├──supabase.ts               # Supabaseクライアント（共通インスタンス）
+ │      └──checkSupabaseConnection.ts # Supabase接続確認
+ └── instrumentation.ts              # サーバー起動時処理（Supabase接続確認）
+
+## Supabase
+- プロジェクト名：`task-kanban`（MCPで参照する際はこのプロジェクトを使用。`mcp-practice`と間違えないこと）
+- 環境変数：キー名は`.env.example`を参照し、実際の値は`.env.local`に記載する（`.env.local`はコミットしない）
+  - `NEXT_PUBLIC_SUPABASE_URL`：プロジェクトURL
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`：Publishableキー（`sb_publishable_...`）。レガシーのanonキーやsecretキーは使用しない
+- DBアクセスは`src/lib/supabase.ts`の`supabase`をimportして行い、個別に`createClient`しないでください
+- サーバー起動時に`src/instrumentation.ts`が接続確認を行い、失敗時のみ`console.error`でログを出力する（成功時は出力しない）
+- テストではSupabaseへの通信（`fetch`やクライアント）を外部依存としてモック化してください
 
 ## コーディングルール
 - 変更後は必ず`npm test`でテストが通ることを確認してください
