@@ -1,0 +1,150 @@
+"use client";
+
+import { useEffect, useId, useState } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import TaskCard from "@/components/TaskCard";
+import TaskForm from "@/components/TaskForm";
+import { createTask, deleteTask, fetchTasks, updateTask } from "@/lib/taskRepository";
+import {
+  taskStatuses,
+  taskStatusLabels,
+  type NewTask,
+  type Task,
+  type TaskChanges,
+  type TaskStatus,
+} from "@/types/task";
+
+export default function TaskBoard() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    fetchTasks()
+      .then((fetched) => {
+        if (!ignore) setTasks(fetched);
+      })
+      .catch(() => {
+        if (!ignore) setErrorMessage("タスクの取得に失敗しました");
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleCreate = async (newTask: NewTask) => {
+    try {
+      const created = await createTask(newTask);
+      setTasks((current) => [...current, created]);
+      setErrorMessage(null);
+      return true;
+    } catch {
+      setErrorMessage("タスクの追加に失敗しました");
+      return false;
+    }
+  };
+
+  const handleUpdate = async (id: string, changes: TaskChanges) => {
+    try {
+      const updated = await updateTask(id, changes);
+      setTasks((current) => current.map((task) => (task.id === id ? updated : task)));
+      setErrorMessage(null);
+      return true;
+    } catch {
+      setErrorMessage("タスクの更新に失敗しました");
+      return false;
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingTask) return;
+    const { id } = deletingTask;
+    setDeletingTask(null);
+    try {
+      await deleteTask(id);
+      setTasks((current) => current.filter((task) => task.id !== id));
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage("タスクの削除に失敗しました");
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {errorMessage && (
+        <p
+          role="alert"
+          className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+        >
+          {errorMessage}
+        </p>
+      )}
+      {isLoading ? (
+        <p>読み込み中...</p>
+      ) : (
+        <>
+          <TaskForm onSubmit={handleCreate} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {taskStatuses.map((status) => (
+              <TaskColumn
+                key={status}
+                status={status}
+                tasks={tasks.filter((task) => task.status === status)}
+                onUpdate={handleUpdate}
+                onDeleteRequest={setDeletingTask}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {deletingTask && (
+        <ConfirmDialog
+          title="タスクの削除"
+          message={`「${deletingTask.title}」を削除しますか？`}
+          confirmLabel="削除する"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeletingTask(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+type TaskColumnProps = {
+  status: TaskStatus;
+  tasks: Task[];
+  onUpdate: (id: string, changes: TaskChanges) => Promise<boolean>;
+  onDeleteRequest: (task: Task) => void;
+};
+
+function TaskColumn({ status, tasks, onUpdate, onDeleteRequest }: TaskColumnProps) {
+  const headingId = useId();
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="flex flex-col gap-3 rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800/50"
+    >
+      <h2 id={headingId} className="font-semibold">
+        {taskStatusLabels[status]}
+      </h2>
+      {tasks.length === 0 ? (
+        <p className="text-sm text-zinc-500">タスクはありません</p>
+      ) : (
+        tasks.map((task) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            onUpdate={onUpdate}
+            onDeleteRequest={onDeleteRequest}
+          />
+        ))
+      )}
+    </section>
+  );
+}
