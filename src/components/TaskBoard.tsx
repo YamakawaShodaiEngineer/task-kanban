@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { CircleAlertIcon } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TaskCard from "@/components/TaskCard";
 import TaskForm from "@/components/TaskForm";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createTask, deleteTask, fetchTasks, updateTask } from "@/lib/taskRepository";
 import {
   taskStatuses,
@@ -13,6 +17,13 @@ import {
   type TaskChanges,
   type TaskStatus,
 } from "@/types/task";
+
+/** 列見出しの横に表示するステータス色（globals.cssのテーマ変数） */
+const statusDotClasses: Record<TaskStatus, string> = {
+  todo: "bg-status-todo",
+  in_progress: "bg-status-in-progress",
+  done: "bg-status-done",
+};
 
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -77,19 +88,17 @@ export default function TaskBoard() {
   return (
     <div className="flex flex-col gap-6">
       {errorMessage && (
-        <p
-          role="alert"
-          className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {errorMessage}
-        </p>
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>{errorMessage}</AlertTitle>
+        </Alert>
       )}
       {isLoading ? (
-        <p>読み込み中...</p>
+        <BoardSkeleton />
       ) : (
         <>
           <TaskForm onSubmit={handleCreate} />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
             {taskStatuses.map((status) => (
               <TaskColumn
                 key={status}
@@ -115,6 +124,24 @@ export default function TaskBoard() {
   );
 }
 
+function BoardSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">読み込み中...</span>
+      <Skeleton className="h-24 w-full rounded-xl" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {taskStatuses.map((status) => (
+          <div key={status} className="flex flex-col gap-3 rounded-xl bg-muted/50 p-3">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type TaskColumnProps = {
   status: TaskStatus;
   tasks: Task[];
@@ -128,13 +155,21 @@ function TaskColumn({ status, tasks, onUpdate, onDeleteRequest }: TaskColumnProp
   return (
     <section
       aria-labelledby={headingId}
-      className="flex flex-col gap-3 rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800/50"
+      className="flex flex-col gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-foreground/5"
     >
-      <h2 id={headingId} className="font-semibold">
-        {taskStatusLabels[status]}
-      </h2>
+      <div className="flex items-center gap-2 px-1">
+        <span aria-hidden="true" className={`size-2 rounded-full ${statusDotClasses[status]}`} />
+        <h2 id={headingId} className="text-sm font-semibold">
+          {taskStatusLabels[status]}
+        </h2>
+        <Badge variant="secondary" className="ml-auto tabular-nums">
+          {tasks.length}件
+        </Badge>
+      </div>
       {tasks.length === 0 ? (
-        <p className="text-sm text-zinc-500">タスクはありません</p>
+        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+          タスクはありません
+        </p>
       ) : (
         tasks.map((task) => (
           <TaskCard

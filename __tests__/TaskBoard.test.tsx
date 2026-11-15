@@ -67,6 +67,31 @@ describe("一覧表示", () => {
     expect(within(column("Done")).getByText("タスクはありません")).toBeDefined();
   });
 
+  it("各列に、その列のタスク件数が表示される（0件の列は0件）", async () => {
+    await renderBoard([
+      makeTask({ id: "1", title: "タスクA", status: "todo" }),
+      makeTask({ id: "2", title: "タスクB", status: "todo" }),
+      makeTask({ id: "3", title: "タスクC", status: "done" }),
+    ]);
+
+    expect(within(column("Todo")).getByText("2件")).toBeDefined();
+    expect(within(column("In Progress")).getByText("0件")).toBeDefined();
+    expect(within(column("Done")).getByText("1件")).toBeDefined();
+  });
+
+  it("ステータスを変更すると、移動元と移動先の列の件数が更新される", async () => {
+    const user = await renderBoard([makeTask({ status: "todo" })]);
+    vi.mocked(updateTask).mockResolvedValue(makeTask({ status: "in_progress" }));
+
+    await user.selectOptions(
+      within(column("Todo")).getByLabelText("ステータス"),
+      "in_progress",
+    );
+
+    expect(await within(column("In Progress")).findByText("1件")).toBeDefined();
+    expect(within(column("Todo")).getByText("0件")).toBeDefined();
+  });
+
   it("タスクの取得に失敗したとき、エラーメッセージが表示される", async () => {
     vi.mocked(fetchTasks).mockRejectedValue(new Error("network error"));
     render(<TaskBoard />);

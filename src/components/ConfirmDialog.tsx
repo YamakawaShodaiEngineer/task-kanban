@@ -1,6 +1,14 @@
 "use client";
 
-import { useId } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ConfirmDialogProps = {
   title: string;
@@ -17,38 +25,27 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const titleId = useId();
-
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900"
-      >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {title}
-        </h2>
-        <p className="mt-2 text-sm">{message}</p>
-        <div className="mt-6 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-600"
-          >
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel}>
             キャンセル
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            autoFocus
-            className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
-          >
+          </Button>
+          <Button type="button" variant="destructive" onClick={onConfirm} autoFocus>
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

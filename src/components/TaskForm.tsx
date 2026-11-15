@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
+import { PlusIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { validateTaskTitle } from "@/lib/validateTaskTitle";
 import type { NewTask } from "@/types/task";
 
@@ -14,6 +20,9 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
   const [description, setDescription] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const titleId = useId();
+  const descriptionId = useId();
+  const errorId = useId();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,42 +43,48 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
   };
 
   return (
-    <form
-      aria-label="タスクの追加"
-      onSubmit={handleSubmit}
-      noValidate
-      className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
-    >
-      <label className="flex flex-col gap-1 text-sm">
-        タイトル
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-600 dark:bg-zinc-800"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        説明
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          rows={2}
-          className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-600 dark:bg-zinc-800"
-        />
-      </label>
-      {validationError && (
-        <p role="alert" className="text-sm text-red-600">
-          {validationError}
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-end rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-      >
-        追加
-      </button>
-    </form>
+    <Card>
+      <CardContent>
+        <form
+          aria-label="タスクの追加"
+          onSubmit={handleSubmit}
+          noValidate
+          className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-start"
+        >
+          <div className="grid gap-2">
+            <Label htmlFor={titleId}>タイトル</Label>
+            <Input
+              id={titleId}
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="例：資料を作成する"
+              aria-invalid={validationError ? true : undefined}
+              aria-describedby={validationError ? errorId : undefined}
+            />
+            {validationError && (
+              <p id={errorId} role="alert" className="text-sm text-destructive">
+                {validationError}
+              </p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={descriptionId}>説明</Label>
+            <Textarea
+              id={descriptionId}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="任意"
+              rows={1}
+              className="min-h-8"
+            />
+          </div>
+          <Button type="submit" disabled={isSubmitting} className="md:mt-6">
+            <PlusIcon data-icon="inline-start" />
+            追加
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

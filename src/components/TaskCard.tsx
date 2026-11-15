@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { validateTaskTitle } from "@/lib/validateTaskTitle";
 import {
   isTaskStatus,
@@ -22,6 +29,10 @@ export default function TaskCard({ task, onUpdate, onDeleteRequest }: TaskCardPr
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  const statusId = useId();
+  const errorId = useId();
 
   const startEditing = () => {
     setTitle(task.title);
@@ -49,94 +60,104 @@ export default function TaskCard({ task, onUpdate, onDeleteRequest }: TaskCardPr
   };
 
   return (
-    <article
-      aria-label={task.title}
-      className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-    >
-      {isEditing ? (
-        <>
-          <label className="flex flex-col gap-1 text-sm">
-            タイトル
-            <input
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-600 dark:bg-zinc-800"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            説明
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={2}
-              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-600 dark:bg-zinc-800"
-            />
-          </label>
-          {validationError && (
-            <p role="alert" className="text-sm text-red-600">
-              {validationError}
-            </p>
+    <article aria-label={task.title}>
+      <Card size="sm" className="transition-shadow hover:shadow-md">
+        <CardContent className="flex flex-col gap-3">
+          {isEditing ? (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor={titleId}>タイトル</Label>
+                <Input
+                  id={titleId}
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  aria-invalid={validationError ? true : undefined}
+                  aria-describedby={validationError ? errorId : undefined}
+                />
+                {validationError && (
+                  <p id={errorId} role="alert" className="text-sm text-destructive">
+                    {validationError}
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={descriptionId}>説明</Label>
+                <Textarea
+                  id={descriptionId}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button type="button" size="sm" onClick={save}>
+                  保存
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-medium leading-snug break-words">{task.title}</h3>
+                {task.description && (
+                  <p className="text-sm whitespace-pre-wrap break-words text-muted-foreground">
+                    {task.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor={statusId} className="sr-only">
+                  ステータス
+                </Label>
+                <NativeSelect
+                  id={statusId}
+                  size="sm"
+                  value={task.status}
+                  onChange={(event) => changeStatus(event.target.value)}
+                >
+                  {taskStatuses.map((status) => (
+                    <NativeSelectOption key={status} value={status}>
+                      {taskStatusLabels[status]}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+                <div className="flex gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="編集"
+                    title="編集"
+                    onClick={startEditing}
+                  >
+                    <PencilIcon />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="削除"
+                    title="削除"
+                    onClick={() => onDeleteRequest(task)}
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="rounded border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-600"
-            >
-              キャンセル
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-            >
-              保存
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <h3 className="font-medium break-words">{task.title}</h3>
-          {task.description && (
-            <p className="text-sm whitespace-pre-wrap break-words text-zinc-600 dark:text-zinc-400">
-              {task.description}
-            </p>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            <label className="flex items-center gap-1 text-xs">
-              ステータス
-              <select
-                value={task.status}
-                onChange={(event) => changeStatus(event.target.value)}
-                className="rounded border border-zinc-300 px-1 py-0.5 dark:border-zinc-600 dark:bg-zinc-800"
-              >
-                {taskStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {taskStatusLabels[status]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={startEditing}
-                className="rounded border border-zinc-300 px-2 py-0.5 text-xs dark:border-zinc-600"
-              >
-                編集
-              </button>
-              <button
-                type="button"
-                onClick={() => onDeleteRequest(task)}
-                className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600"
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+        </CardContent>
+      </Card>
     </article>
   );
 }
