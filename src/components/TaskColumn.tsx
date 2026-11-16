@@ -22,7 +22,12 @@ type TaskColumnProps = {
 };
 
 /** 1つのステータスの列（見出し・件数・タスクカード） */
-export default function TaskColumn({ status, tasks, onUpdate, onDeleteRequest }: TaskColumnProps) {
+export default function TaskColumn({
+  status,
+  tasks,
+  onUpdate,
+  onDeleteRequest,
+}: TaskColumnProps) {
   const headingId = useId();
 
   return (

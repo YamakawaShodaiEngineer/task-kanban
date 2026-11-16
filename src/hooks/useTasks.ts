@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createTask, deleteTask, fetchTasks, updateTask } from "@/lib/taskRepository";
 import type { NewTask, Task, TaskChanges } from "@/types/task";
 
@@ -32,43 +32,56 @@ export function useTasks() {
   }, []);
 
   /** 操作を実行し、成功時は一覧を更新してエラーを消す。失敗時はエラーメッセージを設定する */
-  const run = async <T,>(
-    operation: () => Promise<T>,
-    applyResult: (result: T) => void,
-    failureMessage: string,
-  ) => {
-    try {
-      const result = await operation();
+  const run = useCallback(
+    async <T,>(
+      operation: () => Promise<T>,
+      applyResult: (result: T) => void,
+      failureMessage: string,
+    ) => {
+      let result: T;
+      try {
+        result = await operation();
+      } catch {
+        setErrorMessage(failureMessage);
+        return false;
+      }
       applyResult(result);
       setErrorMessage(null);
       return true;
-    } catch {
-      setErrorMessage(failureMessage);
-      return false;
-    }
-  };
+    },
+    [],
+  );
 
-  const addTask = (newTask: NewTask) =>
-    run(
-      () => createTask(newTask),
-      (created) => setTasks((current) => [...current, created]),
-      "タスクの追加に失敗しました",
-    );
+  const addTask = useCallback(
+    (newTask: NewTask) =>
+      run(
+        () => createTask(newTask),
+        (created) => setTasks((current) => [...current, created]),
+        "タスクの追加に失敗しました",
+      ),
+    [run],
+  );
 
-  const editTask = (id: string, changes: TaskChanges) =>
-    run(
-      () => updateTask(id, changes),
-      (updated) =>
-        setTasks((current) => current.map((task) => (task.id === id ? updated : task))),
-      "タスクの更新に失敗しました",
-    );
+  const editTask = useCallback(
+    (id: string, changes: TaskChanges) =>
+      run(
+        () => updateTask(id, changes),
+        (updated) =>
+          setTasks((current) => current.map((task) => (task.id === id ? updated : task))),
+        "タスクの更新に失敗しました",
+      ),
+    [run],
+  );
 
-  const removeTask = (id: string) =>
-    run(
-      () => deleteTask(id),
-      () => setTasks((current) => current.filter((task) => task.id !== id)),
-      "タスクの削除に失敗しました",
-    );
+  const removeTask = useCallback(
+    (id: string) =>
+      run(
+        () => deleteTask(id),
+        () => setTasks((current) => current.filter((task) => task.id !== id)),
+        "タスクの削除に失敗しました",
+      ),
+    [run],
+  );
 
   return { tasks, isLoading, errorMessage, addTask, editTask, removeTask };
 }

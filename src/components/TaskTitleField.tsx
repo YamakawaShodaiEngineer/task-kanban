@@ -13,7 +13,12 @@ type TaskTitleFieldProps = {
 };
 
 /** タイトルの入力欄。エラーは入力欄の直下に表示し、aria属性で入力欄と紐付ける */
-export default function TaskTitleField({ value, onChange, error, placeholder }: TaskTitleFieldProps) {
+export default function TaskTitleField({
+  value,
+  onChange,
+  error,
+  placeholder,
+}: TaskTitleFieldProps) {
   const inputId = useId();
   const errorId = useId();
 
