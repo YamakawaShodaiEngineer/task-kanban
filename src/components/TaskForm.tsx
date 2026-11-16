@@ -2,12 +2,12 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { PlusIcon } from "lucide-react";
+import TaskTitleField from "@/components/TaskTitleField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { validateTaskTitle } from "@/lib/validateTaskTitle";
+import { useTaskDraft } from "@/hooks/useTaskDraft";
 import type { NewTask } from "@/types/task";
 
 type TaskFormProps = {
@@ -16,30 +16,19 @@ type TaskFormProps = {
 };
 
 export default function TaskForm({ onSubmit }: TaskFormProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const draft = useTaskDraft();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const titleId = useId();
   const descriptionId = useId();
-  const errorId = useId();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const error = validateTaskTitle(title);
-    setValidationError(error);
-    if (error) return;
+    const newTask = draft.validate();
+    if (!newTask) return;
 
     setIsSubmitting(true);
-    const succeeded = await onSubmit({
-      title: title.trim(),
-      description: description.trim(),
-    });
+    const succeeded = await onSubmit(newTask);
     setIsSubmitting(false);
-    if (succeeded) {
-      setTitle("");
-      setDescription("");
-    }
+    if (succeeded) draft.reset();
   };
 
   return (
@@ -51,29 +40,18 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
           noValidate
           className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-start"
         >
-          <div className="grid gap-2">
-            <Label htmlFor={titleId}>タイトル</Label>
-            <Input
-              id={titleId}
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="例：資料を作成する"
-              aria-invalid={validationError ? true : undefined}
-              aria-describedby={validationError ? errorId : undefined}
-            />
-            {validationError && (
-              <p id={errorId} role="alert" className="text-sm text-destructive">
-                {validationError}
-              </p>
-            )}
-          </div>
+          <TaskTitleField
+            value={draft.title}
+            onChange={draft.setTitle}
+            error={draft.validationError}
+            placeholder="例：資料を作成する"
+          />
           <div className="grid gap-2">
             <Label htmlFor={descriptionId}>説明</Label>
             <Textarea
               id={descriptionId}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              value={draft.description}
+              onChange={(event) => draft.setDescription(event.target.value)}
               placeholder="任意"
               rows={1}
               className="min-h-8"
