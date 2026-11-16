@@ -2,17 +2,16 @@
 
 import { useId, useState } from "react";
 import { PencilIcon, Trash2Icon } from "lucide-react";
+import TaskEditForm from "@/components/TaskEditForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { Textarea } from "@/components/ui/textarea";
-import { validateTaskTitle } from "@/lib/validateTaskTitle";
 import {
   isTaskStatus,
   taskStatuses,
   taskStatusLabels,
+  type NewTask,
   type Task,
   type TaskChanges,
 } from "@/types/task";
@@ -26,30 +25,10 @@ type TaskCardProps = {
 
 export default function TaskCard({ task, onUpdate, onDeleteRequest }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const titleId = useId();
-  const descriptionId = useId();
   const statusId = useId();
-  const errorId = useId();
 
-  const startEditing = () => {
-    setTitle(task.title);
-    setDescription(task.description);
-    setValidationError(null);
-    setIsEditing(true);
-  };
-
-  const save = async () => {
-    const error = validateTaskTitle(title);
-    setValidationError(error);
-    if (error) return;
-
-    const succeeded = await onUpdate(task.id, {
-      title: title.trim(),
-      description: description.trim(),
-    });
+  const save = async (changes: NewTask) => {
+    const succeeded = await onUpdate(task.id, changes);
     if (succeeded) setIsEditing(false);
   };
 
@@ -64,46 +43,7 @@ export default function TaskCard({ task, onUpdate, onDeleteRequest }: TaskCardPr
       <Card size="sm" className="transition-shadow hover:shadow-md">
         <CardContent className="flex flex-col gap-3">
           {isEditing ? (
-            <>
-              <div className="grid gap-2">
-                <Label htmlFor={titleId}>タイトル</Label>
-                <Input
-                  id={titleId}
-                  type="text"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  aria-invalid={validationError ? true : undefined}
-                  aria-describedby={validationError ? errorId : undefined}
-                />
-                {validationError && (
-                  <p id={errorId} role="alert" className="text-sm text-destructive">
-                    {validationError}
-                  </p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor={descriptionId}>説明</Label>
-                <Textarea
-                  id={descriptionId}
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  rows={2}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                >
-                  キャンセル
-                </Button>
-                <Button type="button" size="sm" onClick={save}>
-                  保存
-                </Button>
-              </div>
-            </>
+            <TaskEditForm task={task} onSave={save} onCancel={() => setIsEditing(false)} />
           ) : (
             <>
               <div className="flex flex-col gap-1">
@@ -137,7 +77,7 @@ export default function TaskCard({ task, onUpdate, onDeleteRequest }: TaskCardPr
                     size="icon-sm"
                     aria-label="編集"
                     title="編集"
-                    onClick={startEditing}
+                    onClick={() => setIsEditing(true)}
                   >
                     <PencilIcon />
                   </Button>

@@ -21,12 +21,19 @@ Next.js + Supabaseで構築し、Vercelにデプロイする。
  │      └──globals.css               # グローバルスタイル（shadcn/uiのテーマ用CSS変数を含む）
  ├── components/                     # UIコンポーネント（クライアントコンポーネント）
  │      ├──ui/                       # shadcn/uiのCLIで追加したコンポーネント
- │      ├──TaskBoard.tsx             # カンバン全体（取得・状態管理・3列表示）
+ │      ├──TaskBoard.tsx             # カンバン全体（エラー表示・3列の配置・削除確認）
+ │      ├──BoardSkeleton.tsx         # 読み込み中の表示
+ │      ├──TaskColumn.tsx            # ステータスごとの列（見出し・件数・空状態）
  │      ├──TaskForm.tsx              # タスク追加フォーム
- │      ├──TaskCard.tsx              # タスク表示・編集・ステータス変更
+ │      ├──TaskCard.tsx              # タスク表示・ステータス変更（編集時はTaskEditFormに切り替え）
+ │      ├──TaskEditForm.tsx          # タスクの編集フォーム
+ │      ├──TaskTitleField.tsx        # タイトル入力欄（検証エラー表示とaria紐付け）
  │      ├──ConfirmDialog.tsx         # 確認ダイアログ（削除確認）
  │      ├──ThemeProvider.tsx         # next-themesのプロバイダー（ダークモード）
  │      └──ThemeToggle.tsx           # ライト／ダークの切り替えボタン
+ ├── hooks/
+ │      ├──useTasks.ts               # タスク一覧の取得・追加・更新・削除とエラー状態の管理
+ │      └──useTaskDraft.ts           # 入力途中のタイトル・説明と検証
  ├── lib/
  │      ├──supabase.ts               # Supabaseクライアント（共通インスタンス）
  │      ├──taskRepository.ts         # tasksテーブルのCRUD（Supabaseアクセスはここに集約）
@@ -126,7 +133,7 @@ Next.js + Supabaseで構築し、Vercelにデプロイする。
 - 画面はクライアントコンポーネントで、ブラウザから直接Supabaseを操作する（Server Actionsは使っていない）
 - Supabaseへのアクセスは`src/lib/taskRepository.ts`の関数（`fetchTasks` / `createTask` / `updateTask` / `deleteTask`）経由に限定し、コンポーネントから`supabase`を直接呼ばないでください
   - Supabaseのエラーは例外に変換して投げ、DBの行は`Task`型に変換して返す
-- タスクの状態は`TaskBoard`が一元管理し、子コンポーネントには更新関数を渡す
+- タスクの状態は`TaskBoard`が`useTasks`フックで一元管理し、子コンポーネントには更新関数を渡す
 - 追加・編集・削除の結果は、Supabaseの応答を待ってから一覧に反映する（楽観的更新はしない）
   - 応答で返ったタスクで状態を更新し、一覧の再取得やページリロードはしない
   - 失敗時は一覧を変更せず、画面上部にエラーメッセージ（`role="alert"`）を表示する
